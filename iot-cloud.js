@@ -1,10 +1,10 @@
 /**
  * ============================================================================
- * CYCLOSPOT IoT CLOUD ENGINE (MQTT OVER WEBSOCKETS + SERVERLESS FALLBACK)
+ * CYCLOSPOT IoT CLOUD ENGINE (100% AUTOMÁTICO PELOS SENSORES DO ARDUINO)
  * ============================================================================
- * Permite que o site hospedado no GitHub Pages (ou localmente) receba em tempo
- * real as leituras dos 3 sensores ultrassônicos do Arduino via nuvem MQTT
- * (ISO/IEC 20922) em qualquer celular (4G/5G/Wi-Fi) ou computador.
+ * As vagas mudam para OCUPADA ou LIVRE exclusivamente quando a bicicleta para
+ * na frente do sensor ultrassônico HC-SR04 no Arduino e o Arduino envia os
+ * dados pelo cabo USB (via Gateway Python ou Web Serial USB direto).
  */
 
 (function () {
@@ -14,22 +14,16 @@
     "wss://broker.hivemq.com:8884/mqtt"
   ];
   const PUBLIC_GITHUB_URL = "https://wls-djsf.github.io/cyclospot-iot/";
+  const LIMITE_CM = 3; // Mesmo limite (3 cm) configurado no código do Arduino
 
-  // Estado compartilhado em tempo real dos sensores IoT
+  // Estado compartilhado em tempo real (atualizado pelos sensores físicos)
   window.CycloSpotIoT = {
     mqttConnected: false,
     arduinoConnected: false,
-    arduinoPort: "USB",
+    arduinoPort: "Aguardando dados do sensor...",
     occupiedSlots: [],
     distances: { 1: 999, 2: 999, 3: 999 },
-    activities: [
-      { type: "entrada", label: "Entrada de bicicleta (Vaga 02)", time: "14:28" },
-      { type: "saida", label: "Saída de bicicleta (Vaga 04)", time: "14:15" },
-      { type: "entrada", label: "Entrada de bicicleta (Vaga 10)", time: "14:03" },
-      { type: "saida", label: "Saída de bicicleta (Vaga 06)", time: "13:47" },
-      { type: "entrada", label: "Entrada de bicicleta (Vaga 06)", time: "13:29" }
-    ],
-    reservedSlotsDefault: [6, 10, 14, 18, 22, 26, 30],
+    activities: [],
     clients: [],
     publishState: null
   };
@@ -37,14 +31,13 @@
   // ==========================================================================
   // 1. BANCO DE DADOS EM NUVEM / NAVEGADOR PARA FUNCIONAR NO GITHUB PAGES
   // ==========================================================================
-  const STORAGE_KEY_DB = "cyclospot_cloud_db_v1";
+  const STORAGE_KEY_DB = "cyclospot_cloud_db_v2";
 
   function carregarBancoLocal() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_DB);
       if (raw) return JSON.parse(raw);
     } catch (_) {}
-    const hoje = new Date().toISOString().slice(0, 10);
     const inicial = {
       users: [
         { id: 1, name: "Administrador", email: "admin@cyclospot.com", pass: "12345678", role: "admin", selected_bike_park_id: 1 },
@@ -55,10 +48,7 @@
       bike_parks: [
         { id: 1, name: "CycloSpot — Unidade Piloto", address: "Bloco A - Térreo", capacity: 30, hours: "24 horas" }
       ],
-      reservations: [
-        { id: 101, user_id: 3, user_name: "Gustavo Brito de Jesus", email: "gustavo.315515@aluno.italo.br", bike_park_id: 1, bike_park_name: "CycloSpot — Unidade Piloto", slot_number: 6, date: hoje, time: "08:00", status: "confirmed" },
-        { id: 102, user_id: 4, user_name: "Wanderson Lopes", email: "wanderson@cyclospot.com", bike_park_id: 1, bike_park_name: "CycloSpot — Unidade Piloto", slot_number: 10, date: hoje, time: "08:00", status: "confirmed" }
-      ]
+      reservations: []
     };
     salvarBancoLocal(inicial);
     return inicial;
@@ -82,8 +72,6 @@
     return db.users[0];
   }
 
-  // Interceptador inteligente: se estiver no GitHub Pages (sem servidor Python local),
-  // responde às rotas /api/* diretamente no navegador sincronizado com o MQTT!
   const originalFetch = window.fetch.bind(window);
   const isGitHubPages = location.hostname.includes("github.io") || location.protocol === "file:";
 
@@ -99,9 +87,7 @@
         if (resp.status !== 404 && resp.status !== 502) {
           return resp;
         }
-      } catch (_) {
-        // Se o backend local não estiver rodando, usa o motor em nuvem abaixo
-      }
+      } catch (_) {}
     }
 
     return simularApiCloud(urlStr, init || {});
@@ -144,23 +130,11 @@
       });
     }
 
-    if (pathname.startsWith("/sensors/toggle/") && method === "POST") {
-      const slotNum = Number(pathname.split("/").pop());
-      alternarSensorNuvem(slotNum);
-      return jsonResp({
-        connected: true,
-        occupied_slots: window.CycloSpotIoT.occupiedSlots,
-        distances: window.CycloSpotIoT.distances,
-        activities: window.CycloSpotIoT.activities
-      });
-    }
-
     if (pathname === "/login" && method === "POST") {
       const email = (body.email || "").toLowerCase().trim();
       const pass = body.password || "";
       let user = db.users.find(u => u.email.toLowerCase() === email);
       if (!user) {
-        // Permite login rápido em demonstração para avaliação da banca
         user = {
           id: Date.now(),
           name: email.split("@")[0],
@@ -217,8 +191,7 @@
       for (let n = 1; n <= 30; n++) {
         const isSensor = ocupadasSensor.has(n);
         const isRes = reservadasBanco.has(n);
-        // Vagas 1, 2 e 3 refletem exclusivamente os 3 sensores ultrassônicos físicos do Arduino
-        const ocupada = n <= 3 ? isSensor : isRes;
+        const ocupada = isSensor || isRes;
         slots.push({
           number: n,
           available: !ocupada,
@@ -286,17 +259,17 @@
       const confirmadas = db.reservations.filter(r => r.status === "confirmed");
       const by_hour = Array.from({ length: 24 }, (_, h) => ({
         hour: String(h).padStart(2, "0") + ":00",
-        total: h === 8 ? confirmadas.length : h === 14 ? 2 : h === 17 ? 3 : 0
+        total: h === 8 ? confirmadas.length : 0
       }));
       const dias = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
-      const by_weekday = dias.map((d, i) => ({ day: d, total: i < 5 ? confirmadas.length + i : 1 }));
+      const by_weekday = dias.map(d => ({ day: d, total: confirmadas.length }));
       return jsonResp({
-        total_reservations: confirmadas.length + 5,
+        total_reservations: confirmadas.length,
         active_reservations: confirmadas.length,
         total_users: db.users.length,
-        average_per_day: 2.4,
-        peak_hour: "17:00",
-        low_hour: "08:00",
+        average_per_day: confirmadas.length,
+        peak_hour: confirmadas.length ? "08:00" : null,
+        low_hour: confirmadas.length ? "08:00" : null,
         quiet_hours: [],
         by_hour,
         by_weekday,
@@ -308,7 +281,7 @@
   }
 
   // ==========================================================================
-  // 2. CONEXÃO MQTT SOBRE WEBSOCKETS EM TEMPO REAL (EMQX + HIVEMQ)
+  // 2. RECEPÇÃO AUTOMÁTICA DOS SENSORES VIA NUVEM MQTT (EMQX + HIVEMQ)
   // ==========================================================================
   function carregarScriptMQTT(callback) {
     if (window.mqtt) {
@@ -367,47 +340,114 @@
   }
   window.CycloSpotIoT.publishState = publicarEstadoMQTT;
 
-  function alternarSensorNuvem(numVaga) {
-    const idx = window.CycloSpotIoT.occupiedSlots.indexOf(numVaga);
+  // ==========================================================================
+  // 3. LEITURA DIRETA DO CABO USB DO ARDUINO PELO NAVEGADOR (WEB SERIAL API)
+  //    (Funciona mesmo sem precisar abrir o Python, direto no Chrome/Edge!)
+  // ==========================================================================
+  async function conectarCaboUSBArduinoDireto() {
+    if (!("serial" in navigator)) {
+      alert("Para ler o cabo USB direto pelo navegador, use o Google Chrome ou Microsoft Edge no computador onde o Arduino está plugado (ou abra o arquivo INICIAR_CYCLOSPOT.bat).");
+      return;
+    }
+    try {
+      const port = await navigator.serial.requestPort();
+      await port.open({ baudRate: 9600 });
+      window.CycloSpotIoT.arduinoConnected = true;
+      window.CycloSpotIoT.arduinoPort = "Cabo USB Direto";
+      atualizarBarraIoTUI();
+
+      const decoder = new TextDecoderStream();
+      port.readable.pipeTo(decoder.writable);
+      const reader = decoder.readable.getReader();
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        if (value) {
+          buffer += value;
+          const linhas = buffer.split(/\r?\n/);
+          buffer = linhas.pop() || "";
+          linhas.forEach(processarLinhaSerialArduinoNoNavegador);
+        }
+      }
+    } catch (err) {
+      alert("Não foi possível abrir a porta USB: " + err.message + "\n\nVerifique se o Monitor Serial da Arduino IDE está fechado!");
+    }
+  }
+  window.conectarCaboUSBArduinoDireto = conectarCaboUSBArduinoDireto;
+
+  function atualizarSensorLocalETransmitir(numVaga, distCm) {
+    if (![1, 2, 3].includes(numVaga)) return;
+    window.CycloSpotIoT.distances[numVaga] = distCm;
+    const estavaOcupada = window.CycloSpotIoT.occupiedSlots.includes(numVaga);
+    const agoraOcupada = distCm > 0 && distCm <= LIMITE_CM;
     const horario = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-    if (idx >= 0) {
-      window.CycloSpotIoT.occupiedSlots.splice(idx, 1);
-      window.CycloSpotIoT.distances[numVaga] = 999;
-      window.CycloSpotIoT.activities.unshift({
-        type: "saida",
-        label: `Saída de bicicleta (Vaga 0${numVaga})`,
-        time: horario
-      });
-    } else {
+
+    let mudouEstado = false;
+    if (agoraOcupada && !estavaOcupada) {
       window.CycloSpotIoT.occupiedSlots.push(numVaga);
       window.CycloSpotIoT.occupiedSlots.sort();
-      window.CycloSpotIoT.distances[numVaga] = 2;
       window.CycloSpotIoT.activities.unshift({
         type: "entrada",
         label: `Entrada de bicicleta (Vaga 0${numVaga})`,
         time: horario
       });
+      mudouEstado = true;
+    } else if (!agoraOcupada && estavaOcupada) {
+      window.CycloSpotIoT.occupiedSlots = window.CycloSpotIoT.occupiedSlots.filter(x => x !== numVaga);
+      window.CycloSpotIoT.activities.unshift({
+        type: "saida",
+        label: `Saída de bicicleta (Vaga 0${numVaga})`,
+        time: horario
+      });
+      mudouEstado = true;
     }
-    window.CycloSpotIoT.activities = window.CycloSpotIoT.activities.slice(0, 6);
 
-    const novoEstado = {
-      source: "web_iot",
+    window.CycloSpotIoT.activities = window.CycloSpotIoT.activities.slice(0, 6);
+    const pacote = {
+      source: "arduino_usb",
       connected: true,
-      port: "Nuvem IoT",
+      port: "USB Arduino",
       occupied_slots: window.CycloSpotIoT.occupiedSlots,
       distances: window.CycloSpotIoT.distances,
       activities: window.CycloSpotIoT.activities
     };
-
-    aplicarTelemetriaRecebida(novoEstado);
-    publicarEstadoMQTT(novoEstado);
-
-    // Se estiver rodando localmente com FastAPI, também avisa o backend local
-    if (!isGitHubPages) {
-      originalFetch(`/api/sensors/toggle/${numVaga}`, { method: "POST" }).catch(() => {});
+    aplicarTelemetriaRecebida(pacote);
+    if (mudouEstado) {
+      publicarEstadoMQTT(pacote);
     }
   }
-  window.alternarSensorNuvem = alternarSensorNuvem;
+
+  function processarLinhaSerialArduinoNoNavegador(linha) {
+    linha = (linha || "").trim();
+    if (!linha) return;
+
+    // Formato 1: JSON {"ocupadas":1,"livres":2,"vaga1":2,"vaga2":999,"vaga3":999}
+    if (linha.startsWith("{") && linha.endsWith("}")) {
+      try {
+        const d = JSON.parse(linha);
+        [1, 2, 3].forEach(idx => {
+          if (d["vaga" + idx] !== undefined) {
+            atualizarSensorLocalETransmitir(idx, Number(d["vaga" + idx]));
+          }
+        });
+        return;
+      } catch (_) {}
+    }
+
+    // Formato 2: Texto do seu código Arduino -> "Vaga 1: 2 cm"
+    if (linha.toLowerCase().startsWith("vaga")) {
+      const partes = linha.replace(":", "").split(/\s+/);
+      if (partes.length >= 3) {
+        const numVaga = parseInt(partes[1], 10);
+        const distCm = parseInt(partes[2], 10);
+        if (!isNaN(numVaga) && !isNaN(distCm)) {
+          atualizarSensorLocalETransmitir(numVaga, distCm);
+        }
+      }
+    }
+  }
 
   function aplicarTelemetriaRecebida(dados) {
     if (Array.isArray(dados.occupied_slots)) {
@@ -420,7 +460,7 @@
         3: Number(dados.distances["3"] ?? dados.distances[3] ?? 999)
       };
     }
-    if (Array.isArray(dados.activities) && dados.activities.length) {
+    if (Array.isArray(dados.activities)) {
       window.CycloSpotIoT.activities = dados.activities;
     }
     if (typeof dados.connected === "boolean") {
@@ -437,31 +477,49 @@
   function atualizarGradeVagasDOM() {
     // Atualiza a lista de Últimas Atividades
     const boxAtividades = document.querySelector(".atividades");
-    if (boxAtividades && Array.isArray(window.CycloSpotIoT.activities)) {
-      boxAtividades.innerHTML =
-        "<h2>Últimas atividades (IoT Ao Vivo)</h2>" +
-        window.CycloSpotIoT.activities
-          .slice(0, 5)
-          .map(
-            a =>
-              `<p class="${a.type === "saida" ? "saida" : "entrada"}"><span>${a.label}</span> <span>${a.time}</span></p>`
-          )
-          .join("");
+    if (boxAtividades) {
+      const lista = window.CycloSpotIoT.activities || [];
+      if (lista.length === 0) {
+        boxAtividades.innerHTML =
+          "<h2>Últimas atividades (Sensores)</h2>" +
+          "<p style='color:#5c6b62;font-size:14px;'>Aguardando bicicleta parar no sensor ultrassônico...</p>";
+      } else {
+        boxAtividades.innerHTML =
+          "<h2>Últimas atividades (Sensores)</h2>" +
+          lista
+            .slice(0, 5)
+            .map(
+              a =>
+                `<p class="${a.type === "saida" ? "saida" : "entrada"}"><span>${a.label}</span> <span>${a.time}</span></p>`
+            )
+            .join("");
+      }
     }
 
-    // Atualiza as Vagas 01, 02 e 03 na grade visual
+    // Atualiza as vagas na grade visual (01, 02 e 03 controladas 100% pelos sensores físicos)
     const itensVaga = document.querySelectorAll(".vagas .vaga");
     if (itensVaga.length >= 3) {
-      [1, 2, 3].forEach(num => {
-        const el = itensVaga[num - 1];
-        const ocupada = window.CycloSpotIoT.occupiedSlots.includes(num);
-        const dist = window.CycloSpotIoT.distances[num];
-        el.className = "vaga " + (ocupada ? "ocupada-vaga" : "vaga-livre");
-        el.title = ocupada
-          ? `Vaga 0${num}: OCUPADA no sensor físico (${dist} cm)`
-          : `Vaga 0${num}: LIVRE no sensor físico`;
+      const db = carregarBancoLocal();
+      const reservadas = new Set(
+        db.reservations.filter(r => r.status === "confirmed").map(r => Number(r.slot_number))
+      );
+
+      itensVaga.forEach((el, idx) => {
+        const num = idx + 1;
+        if (num <= 3) {
+          const ocupadaSensor = window.CycloSpotIoT.occupiedSlots.includes(num);
+          const dist = window.CycloSpotIoT.distances[num];
+          el.className = "vaga " + (ocupadaSensor ? "ocupada-vaga" : "vaga-livre");
+          el.title = ocupadaSensor
+            ? `Vaga 0${num}: OCUPADA pelo sensor ultrassônico (${dist} cm)`
+            : `Vaga 0${num}: LIVRE no sensor ultrassônico`;
+        } else {
+          const ocupadaReserva = reservadas.has(num);
+          el.className = "vaga " + (ocupadaReserva ? "ocupada-vaga" : "vaga-livre");
+        }
       });
 
+      // Atualiza os cartões do topo
       const totalCap = itensVaga.length;
       const totalOcup = document.querySelectorAll(".vagas .ocupada-vaga").length;
       const totalDisp = totalCap - totalOcup;
@@ -477,7 +535,7 @@
   }
 
   // ==========================================================================
-  // 3. BARRA VISUAL DE TELEMETRIA IoT + QR CODE PARA A BANCA
+  // 4. BARRA DE TELEMETRIA DOS SENSORES ULTRASSÔNICOS (SOMENTE LEITURA DO SENSOR)
   // ==========================================================================
   function injetarBarraIoT() {
     const painel = document.querySelector(".conteudo");
@@ -529,39 +587,42 @@
         gap: 8px;
         align-items: center;
       }
-      .sensor-chip {
-        background: rgba(255, 255, 255, 0.12);
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        color: #fff;
+      .sensor-chip-readonly {
         padding: 8px 13px;
         border-radius: 10px;
         font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.18s ease;
+        font-weight: 700;
+        user-select: none;
+        cursor: default;
       }
-      .sensor-chip:hover {
-        transform: translateY(-1px);
-        background: rgba(255, 255, 255, 0.22);
-      }
-      .sensor-chip.ocupado {
+      .sensor-chip-readonly.ocupado {
         background: #dc2626;
-        border-color: #fca5a5;
+        border: 1px solid #fca5a5;
         color: #fff;
       }
-      .sensor-chip.livre {
+      .sensor-chip-readonly.livre {
         background: #15803d;
-        border-color: #86efac;
+        border: 1px solid #86efac;
         color: #fff;
       }
-      .btn-qrcode-banca {
+      .btn-acao-iot {
         background: #4cd964;
         color: #072515;
         border: none;
-        padding: 9px 14px;
+        padding: 9px 13px;
         border-radius: 10px;
         font-weight: 800;
-        font-size: 13px;
+        font-size: 12.5px;
+        cursor: pointer;
+      }
+      .btn-usb-iot {
+        background: #ffffff;
+        color: #0b3520;
+        border: none;
+        padding: 9px 13px;
+        border-radius: 10px;
+        font-weight: 800;
+        font-size: 12.5px;
         cursor: pointer;
       }
       .modal-qr-fundo {
@@ -602,24 +663,21 @@
       <div class="iot-status-left">
         <div class="iot-pill">
           <span class="iot-dot"></span>
-          <span id="iot-status-texto">Conectando Nuvem IoT (MQTT)...</span>
+          <span id="iot-status-texto">Aguardando Leitura dos Sensores Ultrassônicos...</span>
         </div>
         <small style="color: #cfe3d6; font-size: 12.5px;">
-          Sensores Ultrassônicos HC-SR04 (Vagas 01, 02 e 03) sincronizados em tempo real entre todos os aparelhos
+          Leitura automática via Sensor Ultrassônico HC-SR04 (Distância &le; 3 cm = Vaga Ocupada)
         </small>
       </div>
       <div class="iot-sensores-chips">
-        <button type="button" class="sensor-chip livre" id="chip-vaga-1" onclick="alternarSensorNuvem(1)" title="Clique para testar ou passe a mão no sensor 1">
-          Vaga 01: Livre
+        <span class="sensor-chip-readonly livre" id="chip-vaga-1">🟢 Sensor Vaga 01: Livre</span>
+        <span class="sensor-chip-readonly livre" id="chip-vaga-2">🟢 Sensor Vaga 02: Livre</span>
+        <span class="sensor-chip-readonly livre" id="chip-vaga-3">🟢 Sensor Vaga 03: Livre</span>
+        <button type="button" class="btn-usb-iot" onclick="conectarCaboUSBArduinoDireto()" title="Use no PC onde o cabo USB do Arduino está conectado">
+          🔌 Conectar Cabo USB
         </button>
-        <button type="button" class="sensor-chip livre" id="chip-vaga-2" onclick="alternarSensorNuvem(2)" title="Clique para testar ou passe a mão no sensor 2">
-          Vaga 02: Livre
-        </button>
-        <button type="button" class="sensor-chip livre" id="chip-vaga-3" onclick="alternarSensorNuvem(3)" title="Clique para testar ou passe a mão no sensor 3">
-          Vaga 03: Livre
-        </button>
-        <button type="button" class="btn-qrcode-banca" onclick="document.getElementById('modal-qr-banca').style.display='flex'">
-          📱 QR Code Banca
+        <button type="button" class="btn-acao-iot" onclick="document.getElementById('modal-qr-banca').style.display='flex'">
+          📱 QR Code
         </button>
       </div>
     `;
@@ -639,13 +697,13 @@
     };
     modal.innerHTML = `
       <div class="modal-qr-caixa">
-        <h3 style="color:#0b3520; margin-bottom:4px;">Acesse no Celular (IoT Ao Vivo)</h3>
-        <p style="font-size:13px; color:#555;">Aponte a câmera do celular para acompanhar os sensores da maquete em tempo real:</p>
+        <h3 style="color:#0b3520; margin-bottom:4px;">Acompanhar no Celular (IoT Ao Vivo)</h3>
+        <p style="font-size:13px; color:#555;">Quando a bicicleta parar no sensor da maquete, a vaga mudará automaticamente no celular:</p>
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(PUBLIC_GITHUB_URL)}" alt="QR Code CycloSpot IoT">
         <p style="font-size:12px; word-break:break-all; margin-bottom:14px;">
           <a href="${PUBLIC_GITHUB_URL}" target="_blank" style="color:#145334; font-weight:bold;">${PUBLIC_GITHUB_URL}</a>
         </p>
-        <button type="button" class="btn-qrcode-banca" onclick="document.getElementById('modal-qr-banca').style.display='none'">Fechar</button>
+        <button type="button" class="btn-acao-iot" onclick="document.getElementById('modal-qr-banca').style.display='none'">Fechar</button>
       </div>
     `;
     document.body.appendChild(modal);
@@ -656,10 +714,12 @@
   function atualizarBarraIoTUI() {
     const txt = document.getElementById("iot-status-texto");
     if (txt) {
-      if (window.CycloSpotIoT.mqttConnected) {
-        txt.textContent = "Nuvem IoT Ativa (MQTT Real-Time) • Sincronizado em Todos os Aparelhos";
+      if (window.CycloSpotIoT.arduinoConnected) {
+        txt.textContent = `Arduino Conectado (${window.CycloSpotIoT.arduinoPort}) • Transmitindo ao Vivo`;
+      } else if (window.CycloSpotIoT.mqttConnected) {
+        txt.textContent = "Nuvem IoT Conectada • Aguardando Leitura do Sensor do Arduino";
       } else {
-        txt.textContent = "Modo IoT Local / Conectando à Nuvem...";
+        txt.textContent = "Conectando à Nuvem IoT...";
       }
     }
 
@@ -668,16 +728,16 @@
       if (!chip) return;
       const ocupada = window.CycloSpotIoT.occupiedSlots.includes(num);
       const dist = window.CycloSpotIoT.distances[num];
-      chip.className = "sensor-chip " + (ocupada ? "ocupado" : "livre");
+      chip.className = "sensor-chip-readonly " + (ocupada ? "ocupado" : "livre");
       chip.textContent = ocupada
-        ? `🔴 Vaga 0${num}: Ocupada (${dist <= 3 ? dist + "cm" : "Sensor"})`
-        : `🟢 Vaga 0${num}: Livre`;
+        ? `🔴 Sensor Vaga 0${num}: Ocupada (${dist < 900 ? dist + " cm" : "<=3 cm"})`
+        : `🟢 Sensor Vaga 0${num}: Livre`;
     });
   }
 
   window.addEventListener("DOMContentLoaded", () => {
     injetarBarraIoT();
     iniciarConexaoMQTT();
-    setTimeout(atualizarGradeVagasDOM, 300);
+    setTimeout(atualizarGradeVagasDOM, 200);
   });
 })();

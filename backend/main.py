@@ -309,11 +309,17 @@ def _detectar_porta_arduino():
     if not serial:
         return None
     portas = list(serial.tools.list_ports.comports())
+    # 1. Prioriza portas que tenham Arduino/USB/CH340/CP210 no nome ou no VID/PID USB
     for p in portas:
         desc = (p.description or "").lower()
-        if any(k in desc for k in ["arduino", "ch340", "usb", "serial", "cp210"]):
+        hwid = (p.hwid or "").lower()
+        if any(k in desc or k in hwid for k in ["arduino", "ch340", "usb", "cp210", "ftdi", "vid_"]):
             return p.device
-    return portas[0].device if portas else None
+    # 2. Caso contrário, usa qualquer porta diferente da COM1 interna da placa-mãe
+    for p in portas:
+        if p.device.upper() != "COM1":
+            return p.device
+    return None
 
 
 def _loop_leitor_serial():
