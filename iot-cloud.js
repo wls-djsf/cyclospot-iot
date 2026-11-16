@@ -31,12 +31,18 @@
   // ==========================================================================
   // 1. BANCO DE DADOS EM NUVEM / NAVEGADOR PARA FUNCIONAR NO GITHUB PAGES
   // ==========================================================================
-  const STORAGE_KEY_DB = "cyclospot_cloud_db_v2";
+  const STORAGE_KEY_DB = "cyclospot_cloud_db_v3";
 
   function carregarBancoLocal() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_DB);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.bike_parks && parsed.bike_parks[0]) {
+          parsed.bike_parks[0].capacity = 3;
+        }
+        return parsed;
+      }
     } catch (_) {}
     const inicial = {
       users: [
@@ -46,7 +52,7 @@
         { id: 4, name: "Wanderson Lopes", email: "wanderson@cyclospot.com", pass: "12345678", role: "admin", selected_bike_park_id: 1 }
       ],
       bike_parks: [
-        { id: 1, name: "CycloSpot — Unidade Piloto", address: "Bloco A - Térreo", capacity: 30, hours: "24 horas" }
+        { id: 1, name: "CycloSpot — Unidade Piloto", address: "Bloco A - Térreo", capacity: 3, hours: "24 horas" }
       ],
       reservations: []
     };
@@ -188,7 +194,7 @@
       );
       const ocupadasSensor = new Set(window.CycloSpotIoT.occupiedSlots.map(Number));
       const slots = [];
-      for (let n = 1; n <= 30; n++) {
+      for (let n = 1; n <= 3; n++) {
         const isSensor = ocupadasSensor.has(n);
         const isRes = reservadasBanco.has(n);
         const ocupada = isSensor || isRes;
@@ -198,7 +204,7 @@
           sensor_occupied: isSensor
         });
       }
-      return jsonResp({ capacity: 30, slots });
+      return jsonResp({ capacity: 3, slots });
     }
 
     if (pathname === "/reservations" && method === "POST") {
@@ -496,39 +502,42 @@
       }
     }
 
-    // Atualiza as vagas na grade visual (01, 02 e 03 controladas 100% pelos sensores físicos)
-    const itensVaga = document.querySelectorAll(".vagas .vaga");
-    if (itensVaga.length >= 3) {
-      const db = carregarBancoLocal();
-      const reservadas = new Set(
-        db.reservations.filter(r => r.status === "confirmed").map(r => Number(r.slot_number))
-      );
+    // Atualiza as 3 vagas na grade visual (01, 02 e 03 controladas pelos sensores físicos)
+    const gradeVagas = document.querySelector(".vagas");
+    if (gradeVagas) {
+      let itensVaga = gradeVagas.querySelectorAll(".vaga");
+      if (itensVaga.length !== 3) {
+        gradeVagas.innerHTML = `
+          <div class="vaga vaga-livre">01</div>
+          <div class="vaga vaga-livre">02</div>
+          <div class="vaga vaga-livre">03</div>
+        `;
+        itensVaga = gradeVagas.querySelectorAll(".vaga");
+      }
 
-      itensVaga.forEach((el, idx) => {
-        const num = idx + 1;
-        if (num <= 3) {
-          const ocupadaSensor = window.CycloSpotIoT.occupiedSlots.includes(num);
-          const dist = window.CycloSpotIoT.distances[num];
-          el.className = "vaga " + (ocupadaSensor ? "ocupada-vaga" : "vaga-livre");
-          el.title = ocupadaSensor
-            ? `Vaga 0${num}: OCUPADA pelo sensor ultrassônico (${dist} cm)`
-            : `Vaga 0${num}: LIVRE no sensor ultrassônico`;
-        } else {
-          const ocupadaReserva = reservadas.has(num);
-          el.className = "vaga " + (ocupadaReserva ? "ocupada-vaga" : "vaga-livre");
-        }
+      [1, 2, 3].forEach(num => {
+        const el = itensVaga[num - 1];
+        const ocupadaSensor = window.CycloSpotIoT.occupiedSlots.includes(num);
+        const dist = window.CycloSpotIoT.distances[num];
+        el.className = "vaga " + (ocupadaSensor ? "ocupada-vaga" : "vaga-livre");
+        el.title = ocupadaSensor
+          ? `Vaga 0${num}: OCUPADA pelo sensor ultrassônico (${dist} cm)`
+          : `Vaga 0${num}: LIVRE no sensor ultrassônico`;
       });
 
-      // Atualiza os cartões do topo
-      const totalCap = itensVaga.length;
-      const totalOcup = document.querySelectorAll(".vagas .ocupada-vaga").length;
+      const totalCap = 3;
+      const totalOcup = gradeVagas.querySelectorAll(".ocupada-vaga").length;
       const totalDisp = totalCap - totalOcup;
       const c1 = document.querySelector(".cards .card:nth-child(1) p");
       const c2 = document.querySelector(".cards .card:nth-child(2) p");
+      const s1 = document.querySelector(".cards .card:nth-child(1) span");
+      const s2 = document.querySelector(".cards .card:nth-child(2) span");
       const c3 = document.querySelector(".cards .card:nth-child(3) p");
       const barra = document.querySelector(".barra-preenchida");
       if (c1) c1.textContent = totalDisp;
       if (c2) c2.textContent = totalOcup;
+      if (s1) s1.textContent = "de 3 vagas";
+      if (s2) s2.textContent = "de 3 vagas";
       if (c3) c3.textContent = Math.round((totalOcup / totalCap) * 100) + "%";
       if (barra) barra.style.width = (totalOcup / totalCap) * 100 + "%";
     }

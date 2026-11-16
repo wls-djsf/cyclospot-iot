@@ -94,12 +94,13 @@ def inicializar_banco():
         CREATE INDEX IF NOT EXISTS idx_reservation_user ON reservations(user_id);
         """)
 
-        # Unidade piloto que já aparecia no dashboard original.
+        # Unidade piloto com 3 vagas físicas monitoradas por sensor ultrassônico.
         con.execute(
             """INSERT OR IGNORE INTO bike_parks(id,name,address,capacity,hours,is_active)
                VALUES(1,?,?,?,?,1)""",
-            ("CycloSpot — Unidade Piloto", "Bloco A - Térreo", 30, "24 horas")
+            ("CycloSpot — Unidade Piloto", "Bloco A - Térreo", 3, "24 horas")
         )
+        con.execute("UPDATE bike_parks SET capacity=3 WHERE id=1")
 
         # Migra bancos criados com a primeira versão do projeto, sem apagar dados.
         user_columns = {row[1] for row in con.execute("PRAGMA table_info(users)").fetchall()}
