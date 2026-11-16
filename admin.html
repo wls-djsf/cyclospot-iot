@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Administração - CycloSpot</title>
+    <meta name="cyclospot-build" content="2026.11.14.3">
+    <link rel="stylesheet" href="style.css?v=202611143">
+    <link rel="stylesheet" href="admin.css?v=202611143">
+    <script src="iot-cloud.js"></script>
+</head>
+<body>
+<div class="sidebar">
+    <img src="logo.png" alt="Logo CycloSpot" class="logo">
+    <a href="index.html"><div>Início</div></a>
+    <a href="registro.html"><div>Registro</div></a>
+    <a href="admin.html"><div class="ativo">Administração</div></a>
+</div>
+<main class="conteudo admin-conteudo">
+    <header class="admin-cabecalho">
+        <div class="admin-titulo"><span class="admin-eyebrow">CENTRAL DE CONTROLE</span><h1>Painel de administração</h1><p>Gerencie reservas, acompanhe os usuários e analise a utilização do CycloSpot.</p></div>
+        <div class="topo-direita topo-admin-direita">
+            <div class="data"><p id="data-atual"></p><p id="hora-atual"></p></div>
+            <div class="conta-usuario">
+                <div class="avatar"><img src="usuario.svg" alt="Foto do usuário"></div>
+                <div class="dados-conta"><p id="nome-conta">Administrador</p><small id="unidade-conta">CycloSpot — Unidade Piloto · Bloco A - Térreo</small></div>
+                <button id="acao-conta" class="botao-sair" type="button">Sair</button>
+            </div>
+        </div>
+    </header>
+    <p id="aviso-admin" class="aviso-admin" role="status"></p>
+
+    <nav class="admin-tabs" aria-label="Seções administrativas">
+        <button class="ativo" data-aba="reservas" type="button"><span>▤</span> Reservas</button>
+        <button data-aba="usuarios" type="button"><span>♙</span> Usuários</button>
+        <button data-aba="relatorios" type="button"><span>▥</span> Relatórios</button>
+    </nav>
+
+    <section class="admin-section" id="aba-reservas">
+        <div class="section-heading"><div><span class="admin-eyebrow">OPERAÇÃO</span><h2>Gerenciamento de reservas</h2><p>Consulte as reservas registradas e cancele quando necessário.</p></div><span class="contador-registros" id="contador-reservas">0 reservas</span></div>
+        <div class="filtros-tabela"><input id="busca-reserva" type="search" placeholder="Buscar por usuário, local ou data..."><select id="filtro-status-reserva"><option value="all">Todos os status</option><option value="confirmed">Confirmadas</option><option value="cancelled">Canceladas</option></select></div>
+        <div class="tabela-wrapper" id="tabela-reservas"><div class="estado-vazio">Carregando reservas…</div></div>
+    </section>
+
+    <section class="admin-section" id="aba-usuarios" hidden>
+        <div class="section-heading"><div><span class="admin-eyebrow">RELACIONAMENTO</span><h2>Gerenciamento de usuários</h2><p>Veja a frequência de utilização de cada conta no CycloSpot.</p></div></div>
+        <div class="legenda-usuarios"><span><i class="tag-frequente"></i> Frequente: 3 ou mais reservas</span><span><i class="tag-retornou"></i> Retornou: 2 reservas</span><span><i class="tag-novo"></i> Uma visita: 1 reserva</span><span><i class="tag-sem"></i> Sem reservas</span></div>
+        <div class="filtros-tabela"><input id="busca-usuario" type="search" placeholder="Buscar por nome ou e-mail..."></div>
+        <div class="tabela-wrapper" id="tabela-usuarios"><div class="estado-vazio">Carregando usuários…</div></div>
+    </section>
+
+    <section class="admin-section relatorios-section" id="aba-relatorios" hidden>
+        <div class="section-heading relatorio-heading"><div><span class="admin-eyebrow">INTELIGÊNCIA DE USO</span><h2>Relatórios de utilização</h2><p>Entenda os horários mais procurados e os períodos com menor movimento.</p></div>
+            <div class="filtros-relatorio"><label>Período<select id="filtro-periodo"><option value="7">Últimos 7 dias</option><option value="30" selected>Últimos 30 dias</option><option value="all">Todo o período</option></select></label></div>
+        </div>
+        <div class="metricas-relatorio" id="metricas"><div class="metric-card skeleton"></div><div class="metric-card skeleton"></div><div class="metric-card skeleton"></div><div class="metric-card skeleton"></div></div>
+        <div class="relatorio-grid">
+            <article class="painel-relatorio painel-horarios"><div class="painel-relatorio-topo"><div><h3>Movimento por horário</h3><p>Quantidade de reservas confirmadas em cada hora do dia.</p></div><span class="mini-legenda"><i></i> Reservas</span></div><div id="chart-horas" class="grafico-barras-horizontais"></div><div id="resumo-horarios" class="insight-relatorio"></div></article>
+            <article class="painel-relatorio painel-dias"><div class="painel-relatorio-topo"><div><h3>Movimento por dia da semana</h3><p>Distribuição das reservas ao longo da semana.</p></div></div><div id="chart-dias" class="grafico-dias"></div><div id="resumo-dias" class="insight-relatorio"></div></article>
+        </div>
+        <div class="nota-relatorio"><span class="nota-icone">i</span><p>Os relatórios consideram as reservas confirmadas e registradas no banco de dados. Horários sem reservas aparecem com valor zero. Quanto maior o histórico de uso, mais representativos serão os resultados.</p></div>
+    </section>
+</main>
+<script>
+const API="/api", token=localStorage.getItem("cyclospot_token");
+let reservasCache=[], usuariosCache=[];
+async function api(url,options={}){
+    const headers={Authorization:"Bearer "+token,...(options.headers||{})};
+    if(options.body) headers["Content-Type"]="application/json";
+    const r=await fetch(API+url,{...options,headers});
+    const d=await r.json().catch(()=>({detail:"O servidor retornou uma resposta inválida."}));
+    if(!r.ok) throw new Error(d.detail||"Erro ao consultar o servidor.");
+    return d;
+}
+function escapar(valor){return String(valor??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function dataBR(valor){if(!valor)return "—";const p=valor.split("-");return p.length===3?p.reverse().join("/"):valor;}
+function tabela(cabecalhos,linhas){
+    if(!linhas.length)return '<div class="estado-vazio">Nenhum registro encontrado.</div>';
+    return '<table><thead><tr>'+cabecalhos.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+linhas.map(l=>'<tr>'+l.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+}
+async function carregarReservas(){
+    reservasCache=await api("/admin/reservations");
+    renderizarReservas();
+}
+function renderizarReservas(){
+    const busca=(document.getElementById("busca-reserva").value||"").toLowerCase();
+    const status=document.getElementById("filtro-status-reserva").value;
+    const filtradas=reservasCache.filter(r=>{
+        const texto=[r.user_name,r.email,r.bike_park_name,r.date,r.time,String(r.slot_number)].join(" ").toLowerCase();
+        return texto.includes(busca)&&(status==="all"||r.status===status);
+    });
+    document.getElementById("contador-reservas").textContent=filtradas.length+" reserva(s)";
+    document.getElementById("tabela-reservas").innerHTML=tabela(
+        ["Usuário","Bicicletário","Vaga","Data e horário","Status","Ação"],
+        filtradas.map(r=>[
+            '<strong>'+escapar(r.user_name)+'</strong><small class="celula-secundaria">'+escapar(r.email)+'</small>',
+            escapar(r.bike_park_name),String(r.slot_number).padStart(2,"0"),dataBR(r.date)+" às "+escapar(r.time),
+            '<span class="status-reserva '+(r.status==="cancelled"?"status-cancelada":"status-confirmada")+'">'+(r.status==="cancelled"?"Cancelada":"Confirmada")+'</span>',
+            r.status==="cancelled"?"—":'<button class="acao-cancelar" data-id="'+r.id+'">Cancelar</button>'
+        ])
+    );
+    document.querySelectorAll(".acao-cancelar").forEach(b=>b.addEventListener("click",async()=>{
+        if(!confirm("Deseja cancelar esta reserva?"))return;
+        try{await api("/admin/reservations/"+b.dataset.id,{method:"DELETE"});await carregarTudo();}
+        catch(e){alert(e.message);}
+    }));
+}
+async function carregarUsuarios(){
+    usuariosCache=await api("/admin/users");
+    renderizarUsuarios();
+}
+function renderizarUsuarios(){
+    const busca=(document.getElementById("busca-usuario").value||"").toLowerCase();
+    const filtrados=usuariosCache.filter(u=>(u.name+" "+u.email).toLowerCase().includes(busca));
+    const classe={"Frequente":"frequente","Retornou":"retornou","Uma visita":"novo","Sem reservas":"sem"};
+    document.getElementById("tabela-usuarios").innerHTML=tabela(
+        ["Usuário","Reservas confirmadas","Última reserva","Perfil de uso"],
+        filtrados.map(u=>[
+            '<strong>'+escapar(u.name)+'</strong><small class="celula-secundaria">'+escapar(u.email)+'</small>',
+            '<strong>'+u.reservation_count+'</strong>',dataBR((u.last_reservation||"").slice(0,10)),
+            '<span class="perfil-uso perfil-'+classe[u.classification]+'">'+escapar(u.classification)+'</span>'
+        ])
+    );
+}
+function renderMetricas(d){
+    const cards=[
+        ["Reservas no período",d.total_reservations,"calendar-check"],
+        ["Usuários que reservaram",d.total_users,"users"],
+        ["Média por dia",d.average_per_day,"activity"],
+        ["Horário de pico",d.peak_hour||"Sem dados","clock"]
+    ];
+    document.getElementById("metricas").innerHTML=cards.map((c,i)=>
+        '<article class="metric-card"><div class="metric-card-icone icone-'+i+'">'+["▣","♙","↗","◷"][i]+'</div><div><span>'+c[0]+'</span><strong>'+c[1]+'</strong></div></article>'
+    ).join("");
+}
+function renderHoras(d){
+    const horas=d.by_hour||[];
+    const max=Math.max(...horas.map(x=>x.total),1);
+    document.getElementById("chart-horas").innerHTML=d.total_reservations===0?
+        '<div class="estado-vazio">Ainda não há reservas suficientes para gerar este gráfico.</div>':
+        horas.map(x=>'<div class="linha-barra"><span class="rotulo-barra">'+x.hour+'</span><div class="trilho-barra"><span style="width:'+(x.total/max*100)+'%"></span></div><strong>'+x.total+'</strong></div>').join("");
+    const resumo=document.getElementById("resumo-horarios");
+    if(!d.total_reservations){resumo.textContent="Registre reservas para identificar horários de pico e de baixa utilização.";return;}
+    const quiet=d.quiet_hours||[];
+    resumo.innerHTML='<div><strong>Maior movimento:</strong> '+escapar(d.peak_hour)+' <span>('+d.by_hour.find(x=>x.hour===d.peak_hour).total+' reservas)</span></div>'+
+        '<div><strong>Menor movimento com reservas:</strong> '+escapar(d.low_hour||"—")+'</div>'+(
+        quiet.length?'<div><strong>Sem reservas:</strong> '+quiet.map(escapar).join(", ")+'</div>':'<div><strong>Sem reservas:</strong> nenhum horário no período</div>');
+}
+function renderDias(d){
+    const diasSemana=d.by_weekday||[];
+    const max=Math.max(...diasSemana.map(x=>x.total),1);
+    document.getElementById("chart-dias").innerHTML=d.total_reservations===0?
+        '<div class="estado-vazio">Ainda não há reservas suficientes para gerar este gráfico.</div>':
+        diasSemana.map(x=>'<div class="linha-dia"><div><span>'+x.day+'</span><strong>'+x.total+'</strong></div><div class="trilho-barra"><span style="width:'+(x.total/max*100)+'%"></span></div></div>').join("");
+    const dias=[...(d.by_weekday||[])].sort((a,b)=>b.total-a.total);
+    document.getElementById("resumo-dias").textContent=d.total_reservations&&dias.length?"Dia com mais reservas: "+dias[0].day+". Dia com menos reservas: "+dias[dias.length-1].day+".":"O comparativo por dia da semana será exibido após os primeiros registros.";
+}
+async function carregarRelatorios(){
+    const periodo=document.getElementById("filtro-periodo").value;
+    const query=new URLSearchParams({period:periodo});
+    const d=await api("/admin/reports?"+query.toString());
+    renderMetricas(d);renderHoras(d);renderDias(d);
+}
+async function carregarTudo(){
+    const tarefas=[
+        carregarReservas().catch(e=>{document.getElementById("tabela-reservas").innerHTML='<div class="estado-vazio">Não foi possível carregar as reservas: '+escapar(e.message)+'</div>';throw e;}),
+        carregarUsuarios().catch(e=>{document.getElementById("tabela-usuarios").innerHTML='<div class="estado-vazio">Não foi possível carregar os usuários: '+escapar(e.message)+'</div>';throw e;}),
+        carregarRelatorios().catch(e=>{document.getElementById("metricas").innerHTML='<div class="estado-vazio">Não foi possível carregar os relatórios: '+escapar(e.message)+'</div>';throw e;})
+    ];
+    const resultados=await Promise.allSettled(tarefas);
+    const falhas=resultados.filter(x=>x.status==='rejected');
+    if(falhas.length) document.getElementById("aviso-admin").textContent=falhas.map(x=>x.reason.message).join(' · ');
+}
+document.querySelectorAll(".admin-tabs button").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll(".admin-tabs button").forEach(x=>x.classList.remove("ativo"));b.classList.add("ativo");
+    ["reservas","usuarios","relatorios"].forEach(a=>document.getElementById("aba-"+a).hidden=a!==b.dataset.aba);
+    if(b.dataset.aba==="relatorios")carregarRelatorios().catch(e=>document.getElementById("aviso-admin").textContent=e.message);
+}));
+document.getElementById("busca-reserva").addEventListener("input",renderizarReservas);
+document.getElementById("filtro-status-reserva").addEventListener("change",renderizarReservas);
+document.getElementById("busca-usuario").addEventListener("input",renderizarUsuarios);
+document.getElementById("filtro-periodo").addEventListener("change",()=>carregarRelatorios().catch(e=>document.getElementById("aviso-admin").textContent=e.message));
+(async()=>{
+    if(!token){location.href="login.html";return;}
+    try{
+        const me=await api("/me");
+        if(me.role!=="admin")throw new Error("Esta área é exclusiva para administradores.");
+        document.getElementById("nome-conta").textContent=me.name;
+        await carregarTudo();
+    }catch(e){document.getElementById("aviso-admin").textContent=e.message;}
+})();
+</script>
+<script src="topbar.js?v=202611143"></script>
+</body>
+</html>

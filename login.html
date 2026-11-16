@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="cyclospot-build" content="2026.11.14.3">
+  <title>Acesso | CycloSpot</title>
+  <link rel="stylesheet" href="style.css?v=202611143">
+  <script src="iot-cloud.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <img src="logo.png" alt="CycloSpot" class="logo">
+    <a href="index.html"><div>Início</div></a>
+    <a href="login.html"><div class="ativo">Entrar / Cadastro</div></a>
+  </aside>
+  <main class="conteudo login-conteudo">
+    <header class="topo topo-login">
+      <div class="login-apresentacao">
+        <span class="login-etiqueta">CYCLOSPOT · BICICLETÁRIO</span>
+        <h1>Bem-vindo!</h1>
+        <p>Entre na sua conta para consultar vagas e reservar um espaço para sua bicicleta.</p>
+      </div>
+      <div class="topo-global login-topbar">
+        <div class="data"><p id="data-atual"></p><p id="hora-atual"></p></div>
+        <div class="conta-usuario">
+          <div class="avatar"><img src="usuario.svg" alt=""></div>
+          <div class="dados-conta"><p id="nome-conta">Visitante</p><small id="unidade-conta">CycloSpot — Unidade Piloto</small></div>
+          <button id="acao-conta" class="botao-sair" type="button">Entrar</button>
+        </div>
+      </div>
+    </header>
+    <section class="login-area" aria-labelledby="titulo-form">
+      <div class="login-card-cabecalho"><span class="login-card-icone" aria-hidden="true">↗</span><div><h2 id="titulo-form">Acesse sua conta</h2><p id="descricao-form">Informe seu e-mail e sua senha para continuar.</p></div></div>
+      <form id="form-login">
+        <label class="campo" id="campo-nome" hidden>Nome completo<input id="nome" type="text" autocomplete="name" minlength="2"></label>
+        <label class="campo">E-mail<input id="email" type="email" required autocomplete="email" placeholder="seuemail@exemplo.com"></label>
+        <label class="campo">Senha<input id="senha" type="password" required minlength="8" autocomplete="current-password" placeholder="Mínimo de 8 caracteres"></label>
+        <button class="botao" type="submit" id="btn-enviar">Entrar</button>
+      </form>
+      <p id="mensagem-login" class="mensagem" role="status" aria-live="polite"></p>
+      <div style="margin-top:14px; padding:12px; background:#ebf4ee; border-radius:10px; text-align:center;">
+        <small style="display:block; color:#145334; font-weight:700; margin-bottom:8px;">Acesso Rápido para Apresentação / Banca:</small>
+        <button type="button" onclick="document.getElementById('email').value='admin@cyclospot.com';document.getElementById('senha').value='12345678';document.getElementById('form-login').requestSubmit();" style="background:#145334;color:#fff;border:none;padding:7px 12px;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:700;margin-right:6px;">⚡ Entrar como Admin</button>
+        <button type="button" onclick="document.getElementById('email').value='gustavo.315515@aluno.italo.br';document.getElementById('senha').value='12345678';document.getElementById('form-login').requestSubmit();" style="background:#1e6b43;color:#fff;border:none;padding:7px 12px;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:700;">🚲 Entrar como Ciclista</button>
+      </div>
+      <p class="login-alternar"><span id="texto-alternar">Ainda não tem uma conta?</span> <a href="#" id="alternar">Criar cadastro</a></p>
+      <p class="login-voltar"><a href="index.html">Voltar ao início</a></p>
+    </section>
+  </main>
+<script>
+(() => {
+  const API='/api'; let cadastro=false;
+  const $=id=>document.getElementById(id);
+  $('alternar').addEventListener('click',e=>{
+    e.preventDefault(); cadastro=!cadastro;
+    $('titulo-form').textContent=cadastro?'Crie sua conta':'Acesse sua conta';
+    $('descricao-form').textContent=cadastro?'Preencha seus dados para começar a reservar.':'Informe seu e-mail e sua senha para continuar.';
+    $('campo-nome').hidden=!cadastro; $('nome').required=cadastro;
+    $('btn-enviar').textContent=cadastro?'Criar conta':'Entrar';
+    $('texto-alternar').textContent=cadastro?'Já tem uma conta?':'Ainda não tem uma conta?';
+    $('alternar').textContent=cadastro?'Fazer login':'Criar cadastro';
+    $('senha').autocomplete=cadastro?'new-password':'current-password'; $('mensagem-login').textContent='';
+  });
+  $('form-login').addEventListener('submit',async e=>{
+    e.preventDefault(); const btn=$('btn-enviar'), msg=$('mensagem-login');
+    btn.disabled=true; btn.textContent=cadastro?'Cadastrando…':'Entrando…'; msg.textContent='';
+    const dados={email:$('email').value.trim(),password:$('senha').value};
+    if(cadastro) dados.name=$('nome').value.trim();
+    try {
+      const r=await fetch(API+(cadastro?'/register':'/login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)});
+      const d=await r.json().catch(()=>({detail:'Resposta inválida do servidor.'}));
+      if(!r.ok) throw new Error(typeof d.detail==='string'?d.detail:'Não foi possível acessar. Confira os dados.');
+      if(!d.access_token) throw new Error('O servidor não retornou a sessão. Tente novamente.');
+      localStorage.setItem('cyclospot_token',d.access_token); location.href='index.html';
+    } catch(err) { msg.textContent=err.message; msg.className='mensagem erro-login'; }
+    finally { btn.disabled=false; btn.textContent=cadastro?'Criar conta':'Entrar'; }
+  });
+})();
+</script>
+<script src="topbar.js?v=202611143"></script>
+</body></html>

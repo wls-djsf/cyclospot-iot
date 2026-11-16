@@ -1,0 +1,41 @@
+CYCLOSPOT — VERSÃO INTEGRADA COM ARDUINO VIA CABO USB (QUALQUER PC)
+
+==============================================================================
+COMO INICIAR RAPIDAMENTE (EM QUALQUER COMPUTADOR):
+==============================================================================
+1) Conecte o Arduino no cabo USB (e feche o Monitor Serial da Arduino IDE).
+2) Dê dois cliques no arquivo:
+   INICIAR_CYCLOSPOT.bat
+   (Ele verifica/instala automaticamente o que faltar no PC e já abre o site
+   em http://127.0.0.1:8001).
+
+==============================================================================
+COMO INICIAR PELO TERMINAL (VS CODE / POWERSHELL):
+==============================================================================
+1) Abra o terminal na pasta principal (cyclospot_entrega) e instale as dependências:
+   pip install -r requirements.txt
+2) Entre na pasta backend e inicie o servidor na porta 8001:
+   cd backend
+   python -m uvicorn main:app --reload --port 8001
+3) Abra no navegador:
+   http://127.0.0.1:8001
+
+==============================================================================
+FUNCIONAMENTO DOS SENSORES ULTRASSÔNICOS (ARDUINO VIA CABO USB):
+==============================================================================
+- O arquivo backend/main.py detecta automaticamente em qual porta USB (COM3,
+  COM4, etc.) o Arduino está conectado (em 9600 baud).
+- As Vagas 01, 02 e 03 da tela principal (index.html) refletem em tempo real
+  os 3 sensores ultrassônicos da maquete (distância <= 3 cm = Ocupada).
+- Quando uma bicicleta entra ou sai das Vagas 01, 02 ou 03, o quadro "Últimas
+  atividades" registra automaticamente o evento com o horário atual.
+- Rota de diagnóstico dos sensores em tempo real:
+  http://127.0.0.1:8001/api/sensors
+
+==============================================================================
+CONTAS DE ACESSO JÁ CADASTRADAS NO BANCO (cyclospot.db):
+==============================================================================
+- Administrador de teste:
+  E-mail: admin@cyclospot.com
+  Senha:  12345678
+- As demais contas cadastradas anteriormente continuam preservadas no banco.

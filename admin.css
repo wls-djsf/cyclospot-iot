@@ -1,0 +1,126 @@
+/* Painel administrativo CycloSpot */
+.admin-conteudo{background:#f4f7f5}
+.admin-cabecalho{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:26px}
+.admin-cabecalho h1{margin:6px 0 7px;color:#183d2b;font-size:32px}
+.admin-cabecalho p{color:#65746b;font-size:15px}
+.admin-eyebrow{font-size:10px;font-weight:800;letter-spacing:1.3px;color:#2c8750}
+.admin-identificacao{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e3eae5;padding:9px 13px;border-radius:12px;white-space:nowrap}
+.admin-avatar{width:38px;height:38px;border-radius:50%;background:#e2f1e6;display:flex;align-items:center;justify-content:center}
+.admin-avatar img{width:22px;height:22px}
+.admin-identificacao strong,.admin-identificacao small{display:block}
+.admin-identificacao strong{font-size:13px;color:#1d422f}
+.admin-identificacao small{font-size:11px;color:#7a877e;margin-top:3px}
+.aviso-admin{padding:0;color:#a32222;font-size:14px}
+.admin-tabs{display:flex;gap:7px;background:#e8eee9;padding:6px;border-radius:11px;margin:0 0 20px;width:max-content;max-width:100%}
+.admin-tabs button{display:flex;align-items:center;gap:8px;border:0;border-radius:8px;padding:11px 17px;background:transparent;color:#53665a;font-weight:700;font-size:14px;cursor:pointer}
+.admin-tabs button span{font-size:17px}
+.admin-tabs button.ativo{background:#fff;color:#176b43;box-shadow:0 2px 7px rgba(20,60,35,.08)}
+.admin-section{background:#fff;border:1px solid #e3eae5;border-radius:13px;padding:24px;margin:0 0 20px;box-shadow:0 4px 16px rgba(25,55,35,.025)}
+.section-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:20px}
+.section-heading h2{font-size:22px;color:#1c402e;margin:5px 0 6px}
+.section-heading p{font-size:13px;color:#748078}
+.contador-registros{background:#edf5ef;color:#266a40;padding:8px 11px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap}
+.filtros-tabela{display:flex;gap:10px;margin-bottom:14px}
+.filtros-tabela input,.filtros-tabela select,.filtros-relatorio select{border:1px solid #dce5de;border-radius:8px;background:#fff;padding:10px 12px;color:#35463b;font:inherit;font-size:13px}
+.filtros-tabela input{min-width:230px;flex:1}
+.tabela-wrapper{width:100%;overflow-x:auto}
+.admin-section table{width:100%;border-collapse:collapse;min-width:720px}
+.admin-section th{background:#f4f7f5;color:#617066;font-size:11px;text-transform:uppercase;letter-spacing:.45px;font-weight:700;padding:13px 14px;text-align:left}
+.admin-section td{padding:14px;border-bottom:1px solid #edf1ee;color:#35443a;font-size:13px;vertical-align:middle}
+.admin-section tbody tr:last-child td{border-bottom:0}
+.admin-section tbody tr:hover td{background:#fafcfb}
+.admin-section td strong{font-size:13px;color:#213e2d}
+.celula-secundaria{display:block;color:#829087;font-size:11px;margin-top:4px}
+.status-reserva,.perfil-uso{display:inline-block;padding:6px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.status-confirmada,.perfil-frequente{background:#e6f4e9;color:#237342}
+.status-cancelada,.perfil-sem{background:#f0f2f1;color:#69756e}
+.perfil-retornou{background:#e9f0fb;color:#365d91}
+.perfil-novo{background:#fff3df;color:#93651c}
+.acao-cancelar{border:1px solid #f0d6d6;background:#fff7f7;color:#a33333;border-radius:7px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}
+.acao-cancelar:hover{background:#fdeeee}
+.legenda-usuarios{display:flex;flex-wrap:wrap;gap:15px;margin:-2px 0 16px;color:#66746b;font-size:11px}
+.legenda-usuarios span{display:flex;align-items:center;gap:6px}
+.legenda-usuarios i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.tag-frequente{background:#3b9a5c}.tag-retornou{background:#5b83b7}.tag-novo{background:#d6a13d}.tag-sem{background:#a9b2ac}
+.estado-vazio{padding:28px 18px;text-align:center;border:1px dashed #dbe5dd;border-radius:10px;color:#758278;font-size:13px;grid-column:1/-1}
+.relatorio-heading{align-items:flex-end}
+.filtros-relatorio{display:flex;gap:10px}
+.filtros-relatorio label{display:flex;flex-direction:column;gap:6px;color:#738078;font-size:11px;font-weight:700}
+.metricas-relatorio{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:17px}
+.metric-card{display:flex;align-items:center;gap:12px;padding:17px;background:#fbfcfb;border:1px solid #e6ece7;border-radius:11px;min-width:0}
+.metric-card-icone{width:39px;height:39px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#e9f4ec;color:#237748;font-size:20px;flex:0 0 39px}
+.icone-1{background:#eaf0fa;color:#4b6c9f}.icone-2{background:#fff4e5;color:#a97528}.icone-3{background:#f1ebfa;color:#795da3}
+.metric-card span{display:block;color:#758179;font-size:11px;margin-bottom:5px}
+.metric-card strong{display:block;color:#1d422e;font-size:22px;line-height:1.1;white-space:nowrap}
+.relatorio-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,1fr);gap:16px}
+.painel-relatorio{border:1px solid #e6ece7;border-radius:12px;padding:19px;min-width:0}
+.painel-relatorio-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:17px}
+.painel-relatorio h3{font-size:16px;color:#234431;margin:0 0 5px}
+.painel-relatorio-topo p{font-size:11px;color:#7a877e;line-height:1.4}
+.mini-legenda{display:flex;align-items:center;gap:6px;color:#718078;font-size:10px;white-space:nowrap}
+.mini-legenda i{width:8px;height:8px;border-radius:3px;background:#3b8d58}
+.grafico-barras-horizontais{display:grid;grid-template-columns:1fr 1fr;column-gap:20px;row-gap:9px}
+.linha-barra{display:grid;grid-template-columns:43px minmax(30px,1fr) 20px;align-items:center;gap:8px;min-width:0}
+.rotulo-barra{font-size:10px;color:#748078;font-variant-numeric:tabular-nums}
+.trilho-barra{height:8px;background:#edf2ee;border-radius:20px;overflow:hidden}
+.trilho-barra span{height:100%;min-width:0;display:block;background:#4c9566;border-radius:20px}
+.linha-barra strong{font-size:10px;color:#43554a;text-align:right}
+.grafico-dias{display:flex;flex-direction:column;gap:16px;margin-top:5px}
+.linha-dia>div:first-child{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.linha-dia span{font-size:11px;color:#68766d}
+.linha-dia strong{font-size:11px;color:#314a3a}
+.linha-dia .trilho-barra{height:9px}
+.linha-dia .trilho-barra span{background:#6b9bba}
+.insight-relatorio{display:flex;flex-direction:column;gap:7px;margin-top:19px;padding:12px 13px;background:#f5f9f6;border-radius:9px;color:#647269;font-size:11px;line-height:1.5}
+.insight-relatorio strong{color:#325440}
+.nota-relatorio{display:flex;align-items:flex-start;gap:10px;margin-top:16px;padding:13px 15px;background:#f0f5f1;border-radius:10px}
+.nota-icone{width:19px;height:19px;display:flex;align-items:center;justify-content:center;flex:0 0 19px;border:1px solid #8cad98;border-radius:50%;color:#427252;font-size:12px;font-weight:700}
+.nota-relatorio p{font-size:11px;color:#637269;line-height:1.5}
+.skeleton{min-height:74px;background:linear-gradient(90deg,#f5f7f5 25%,#edf2ee 50%,#f5f7f5 75%);background-size:200% 100%}
+@media(max-width:1100px){.metricas-relatorio{grid-template-columns:repeat(2,minmax(0,1fr))}.relatorio-grid{grid-template-columns:1fr}}
+@media(max-width:760px){.admin-cabecalho,.section-heading{align-items:flex-start;flex-direction:column}.admin-identificacao{align-self:flex-start}.relatorio-heading{gap:15px}.filtros-relatorio{flex-wrap:wrap}.admin-tabs{width:100%}.admin-tabs button{flex:1;justify-content:center;padding:10px 8px;font-size:12px}.admin-section{padding:17px}.grafico-barras-horizontais{grid-template-columns:1fr}.filtros-tabela{flex-direction:column}.filtros-tabela input{min-width:0}}
+@media(max-width:520px){.metricas-relatorio{grid-template-columns:1fr 1fr}.metric-card{padding:12px;gap:8px}.metric-card-icone{width:31px;height:31px;flex-basis:31px}.metric-card strong{font-size:18px}.filtros-relatorio label{width:100%}.filtros-relatorio select{width:100%}}
+
+/* Refinamento visual do painel administrativo */
+.admin-conteudo{padding:34px 40px 48px;background:#f4f7f5}
+.admin-cabecalho{padding:4px 0 22px;border-bottom:1px solid #e3eae5;margin-bottom:20px}
+.admin-cabecalho h1{font-size:34px;letter-spacing:-.7px}
+.admin-cabecalho p{font-size:15px;line-height:1.5;max-width:570px}
+.admin-titulo{max-width:600px}
+.admin-cabecalho .topo-admin-direita{flex-shrink:0}
+.admin-tabs{background:#e8efea;border:1px solid #e0e9e2;padding:5px;border-radius:12px;gap:5px;margin-bottom:22px}
+.admin-tabs button{padding:12px 20px;border-radius:9px;font-size:13px;transition:background .15s,color .15s,box-shadow .15s}
+.admin-tabs button.ativo{background:#176b43;color:#fff;box-shadow:0 3px 9px rgba(23,107,67,.16)}
+.admin-tabs button:not(.ativo):hover{background:#f8fbf9;color:#176b43}
+.admin-section{padding:26px 28px;border-radius:15px;box-shadow:0 5px 20px rgba(26,57,37,.035)}
+.section-heading{align-items:center;margin-bottom:22px}
+.section-heading h2{font-size:23px;letter-spacing:-.3px}
+.section-heading p{font-size:13px;line-height:1.5}
+.filtros-tabela{padding:12px;background:#f7faf8;border:1px solid #e9efea;border-radius:11px;margin-bottom:17px}
+.filtros-tabela input,.filtros-tabela select,.filtros-relatorio select{min-height:41px;background:#fff;border-color:#dce6df;border-radius:8px}
+.admin-section th{background:#f1f5f2;padding:14px 15px;color:#5e7064}
+.admin-section td{padding:15px;color:#34473a}
+.admin-section tbody tr:hover td{background:#f8fbf9}
+.status-reserva,.perfil-uso{padding:7px 11px;font-size:11px}
+.acao-cancelar{padding:8px 12px}
+.legenda-usuarios{padding:13px 15px;background:#f7faf8;border:1px solid #e9efea;border-radius:9px;margin:0 0 16px}
+.relatorio-heading{align-items:flex-end}
+.filtros-relatorio{padding:10px 12px;background:#f7faf8;border:1px solid #e9efea;border-radius:10px}
+.filtros-relatorio label{font-size:12px;color:#586a5e}
+.metricas-relatorio{gap:15px;margin-bottom:18px}
+.metric-card{min-height:92px;padding:18px;border-radius:12px;background:#fff;box-shadow:0 3px 12px rgba(26,57,37,.025)}
+.metric-card-icone{width:43px;height:43px;flex-basis:43px;border-radius:12px}
+.metric-card span{font-size:12px}
+.metric-card strong{font-size:24px}
+.painel-relatorio{padding:22px;background:#fff;border-radius:13px;box-shadow:0 3px 12px rgba(26,57,37,.025)}
+.painel-relatorio h3{font-size:17px}
+.painel-relatorio-topo p{font-size:12px;line-height:1.5}
+.grafico-barras-horizontais{row-gap:11px}
+.trilho-barra{height:9px;background:#edf2ee}
+.trilho-barra span{background:linear-gradient(90deg,#267b4a,#72b184)}
+.linha-dia .trilho-barra span{background:linear-gradient(90deg,#5485a3,#8bb5ca)}
+.insight-relatorio{background:#f3f8f4;border:1px solid #e7f0e9;padding:14px;border-radius:10px;font-size:12px}
+.nota-relatorio{background:#edf5ef;border:1px solid #e1eee4;border-radius:11px}
+.aviso-admin:not(:empty){padding:12px 15px;margin:0 0 15px;background:#fff2f0;border:1px solid #f3d8d4;border-radius:9px}
+@media(max-width:900px){.admin-conteudo{padding:24px}.admin-cabecalho{align-items:flex-start;flex-direction:column}.admin-cabecalho .topo-admin-direita{width:100%;justify-content:flex-start;flex-wrap:wrap}}
+@media(max-width:650px){.admin-conteudo{padding:18px}.admin-section{padding:18px}.admin-tabs button{padding:10px 7px}.admin-cabecalho h1{font-size:28px}}

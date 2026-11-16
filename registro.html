@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="cyclospot-build" content="2026.11.14.3"><title>Minhas reservas | CycloSpot</title><link rel="stylesheet" href="style.css?v=202611143"><link rel="stylesheet" href="admin.css?v=202611143"><script src="iot-cloud.js"></script></head>
+<body>
+<aside class="sidebar"><img src="logo.png" alt="CycloSpot" class="logo"><a href="index.html"><div>Início</div></a><a href="registro.html"><div class="ativo">Registro</div></a><a href="admin.html" id="link-admin" hidden><div>Administração</div></a></aside>
+<main class="conteudo admin-conteudo">
+<header class="admin-cabecalho">
+ <div class="admin-titulo"><span class="admin-eyebrow">SUA CONTA</span><h1>Histórico de reservas</h1><p>Acompanhe as vagas que você reservou no CycloSpot.</p></div>
+ <div class="topo-direita topo-admin-direita"><div class="data"><p id="data-atual"></p><p id="hora-atual"></p></div><div class="conta-usuario"><div class="avatar"><img src="usuario.svg" alt=""></div><div class="dados-conta"><p id="nome-conta">Visitante</p><small id="unidade-conta">CycloSpot — Unidade Piloto</small></div><button id="acao-conta" class="botao-sair" type="button">Sair</button></div></div>
+</header>
+<section class="admin-section"><div class="section-heading"><div><span class="admin-eyebrow">MOVIMENTAÇÕES DA CONTA</span><h2>Reservas registradas</h2><p>Este histórico apresenta as reservas salvas no banco de dados.</p></div><span class="contador-registros" id="contador-registros">0 reservas</span></div><div id="estado-registros" class="estado-vazio">Carregando seu histórico…</div><div class="tabela-wrapper" id="tabela-registros"></div></section>
+</main>
+<script>
+(async()=>{
+ const token=localStorage.getItem('cyclospot_token'), $=id=>document.getElementById(id);
+ const api=async(path)=>{const r=await fetch('/api'+path,{headers:{Authorization:'Bearer '+token}});const d=await r.json().catch(()=>({detail:'Resposta inválida do servidor.'}));if(!r.ok)throw new Error(d.detail||'Falha ao carregar.');return d;};
+ const safe=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ if(!token){location.href='login.html';return;}
+ try{
+  const me=await api('/me'); $('nome-conta').textContent=me.name; if(me.role==='admin')$('link-admin').hidden=false;
+  const rows=await api('/reservations/mine'); $('contador-registros').textContent=rows.length+' reserva(s)';
+  if(!rows.length){$('estado-registros').textContent='Você ainda não possui reservas. Acesse a página inicial para escolher uma unidade e reservar uma vaga.';return;}
+  $('estado-registros').hidden=true;
+  $('tabela-registros').innerHTML='<table><thead><tr><th>Unidade</th><th>Vaga</th><th>Data</th><th>Horário</th><th>Status</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+safe(r.bike_park_name)+'</td><td>'+String(r.slot_number).padStart(2,'0')+'</td><td>'+safe(r.date.split('-').reverse().join('/'))+'</td><td>'+safe(r.time)+'</td><td><span class="status-reserva '+(r.status==='cancelled'?'status-cancelada':'status-confirmada')+'">'+(r.status==='cancelled'?'Cancelada':'Confirmada')+'</span></td></tr>').join('')+'</tbody></table>';
+ }catch(e){$('estado-registros').textContent=e.message;}
+})();
+</script><script src="topbar.js?v=202611143"></script>
+</body></html>

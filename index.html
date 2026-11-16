@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="cyclospot-build" content="2026.11.14.3">
+    <link rel="stylesheet" href="style.css?v=202611143">
+    <link rel="stylesheet" href="index.css?v=202611143">
+    <meta charset="UTF-8">
+    <title>Dashboard CycloSpot</title>
+    <script src="iot-cloud.js"></script>
+</head>
+
+<body>
+<div class="sidebar">
+    <img src="logo.png" alt="Logo CycloSpot" class="logo">
+
+    <a href="index.html"><div class="ativo">Início</div></a>
+    <a href="registro.html"><div>Registro</div></a>
+    <a href="login.html" id="link-login"><div>Entrar / Minha conta</div></a>
+    <a href="admin.html" id="link-admin" style="display:none"><div>Administração</div></a>
+</div>
+
+<div class="conteudo">
+    <div class="topo topo-inicial">
+        <div class="titulo-pagina">
+            <h1>Olá!</h1>
+            <p>Acompanhe a ocupação e reserve uma vaga para sua bicicleta.</p>
+        </div>
+        <div class="topo-direita">
+            <div class="data">
+                <p id="data-atual"></p>
+                <p id="hora-atual"></p>
+            </div>
+            <a href="login.html" id="link-login-topo" class="link-login-topo">Entrar</a>
+            <div class="conta-usuario" id="conta-usuario" hidden>
+                <div class="avatar"><img src="usuario.svg" alt="Foto do usuário"></div>
+                <div class="dados-conta">
+                    <p id="usuario-logado"></p>
+                    <small id="bicicletario-atual">CycloSpot — Unidade Piloto · Bloco A - Térreo</small>
+                </div>
+                <button id="btn-sair" class="botao-sair" type="button">Sair</button>
+            </div>
+        </div>
+    </div>
+
+    <section class="selecao-bicicletario" id="selecao-bicicletario" hidden>
+        <div class="selecao-cabecalho">
+            <div>
+                <span class="etiqueta-secao">ESCOLHA SEU DESTINO</span>
+                <h2>Onde você deseja estacionar?</h2>
+                <p>Selecione uma unidade cadastrada no próprio CycloSpot para consultar e reservar vagas.</p>
+            </div>
+            <button type="button" class="botao-secundario" id="fechar-selecao" hidden>Voltar ao bicicletário escolhido</button>
+        </div>
+        <div class="locais-disponiveis">
+            <div class="locais-disponiveis-titulo">
+                <div><h3>Bicicletários disponíveis no CycloSpot</h3><p>Selecione uma unidade para consultar e reservar vagas.</p></div>
+                <span class="status-disponivel">Reservas habilitadas</span>
+            </div>
+            <div class="lista-bicicletarios" id="lista-bicicletarios">
+                <p>Carregando unidades disponíveis...</p>
+            </div>
+        </div>
+        <p class="mensagem" id="mensagem-local"></p>
+    </section>
+
+    <div id="painel-bicicletario">
+    <div class="local-selecionado-barra">
+        <div><span class="ponto-verde"></span><span id="nome-local-selecionado">Unidade selecionada</span></div>
+        <button type="button" id="trocar-bicicletario" class="link-trocar-local">Trocar unidade</button>
+    </div>
+
+    <div class="cards">
+        <div class="card">
+            <h3>Vagas disponíveis</h3>
+            <p>22</p>
+            <span>de 30 vagas</span>
+        </div>
+        <div class="card">
+            <h3>Vagas ocupadas</h3>
+            <p>8</p>
+            <span>de 30 vagas</span>
+        </div>
+        <div class="card">
+            <h3>Ocupação atual</h3>
+            <p>27%</p>
+            <div class="barra">
+                <div class="barra-preenchida"></div>
+            </div>
+        </div>
+    </div>
+
+    <section class="reserva-box">
+        <div>
+            <h2>Reservar uma vaga</h2>
+            <p>Entre na sua conta para escolher uma vaga e registrar sua reserva.</p>
+        </div>
+        <div class="reserva-campos">
+            <label>Data <input type="date" id="data-reserva"></label>
+            <label>Horário <input type="time" id="hora-reserva"></label>
+            <label>Vaga <select id="vaga-reserva"><option value="">Selecione uma vaga</option></select></label>
+            <button id="btn-reservar">Reservar vaga</button>
+        </div>
+        <p id="mensagem-reserva" class="mensagem"></p>
+        <div id="minhas-reservas"></div>
+    </section>
+
+    <div class="painel-meio">
+
+        <div class="status">
+            <div class="status-cabecalho">
+                <div>
+                    <h2>Status das vagas</h2>
+                    <p>Vagas do bicicletário</p>
+                </div>
+                <div class="legenda">
+                    <span class="livre">Livre</span>
+                    <span class="ocupada">Ocupada</span>
+                </div>
+            </div>
+
+            <div class="vagas">
+                <div class="vaga vaga-livre">01</div>
+                <div class="vaga ocupada-vaga">02</div>
+                <div class="vaga vaga-livre">03</div>
+                <div class="vaga vaga-livre">04</div>
+                <div class="vaga vaga-livre">05</div>
+                <div class="vaga ocupada-vaga">06</div>
+                <div class="vaga vaga-livre">07</div>
+                <div class="vaga vaga-livre">08</div>
+                <div class="vaga vaga-livre">09</div>
+                <div class="vaga ocupada-vaga">10</div>
+                <div class="vaga vaga-livre">11</div>
+                <div class="vaga vaga-livre">12</div>
+                <div class="vaga vaga-livre">13</div>
+                <div class="vaga ocupada-vaga">14</div>
+                <div class="vaga vaga-livre">15</div>
+                <div class="vaga vaga-livre">16</div>
+                <div class="vaga vaga-livre">17</div>
+                <div class="vaga ocupada-vaga">18</div>
+                <div class="vaga vaga-livre">19</div>
+                <div class="vaga vaga-livre">20</div>
+                <div class="vaga vaga-livre">21</div>
+                <div class="vaga ocupada-vaga">22</div>
+                <div class="vaga vaga-livre">23</div>
+                <div class="vaga vaga-livre">24</div>
+                <div class="vaga vaga-livre">25</div>
+                <div class="vaga ocupada-vaga">26</div>
+                <div class="vaga vaga-livre" id="vaga27">27</div>
+                <div class="vaga vaga-livre">28</div>
+                <div class="vaga vaga-livre">29</div>
+                <div class="vaga ocupada-vaga">30</div>
+            </div>
+
+            <div class="informacoes">
+                <h2>Informações do bicicletário</h2>
+
+                <div class="informacoes-lista">
+                    <div class="informacao">
+                        <span>Capacidade total</span>
+                        <p>30 vagas</p>
+                    </div>
+                    <div class="informacao">
+                        <span>Funcionamento</span>
+                        <p>24 horas</p>
+                    </div>
+                    <div class="informacao">
+                        <span>Local</span>
+                        <p>Bloco A - Térreo</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="atividades">
+            <h2>Últimas atividades</h2>
+
+            <p class="entrada"><span>Entrada de bicicleta</span> <span>14:28</span></p>
+            <p class="saida"><span>Saída de bicicleta</span> <span>14:15</span></p>
+            <p class="entrada"><span>Entrada de bicicleta</span> <span>14:03</span></p>
+            <p class="saida"><span>Saída de bicicleta</span> <span>13:47</span></p>
+            <p class="entrada"><span>Entrada de bicicleta</span> <span>13:29</span></p>
+        </div>
+
+    </div>
+</div>
+
+    </div>
+
+<script>
+    const API = "/api";
+    const token = localStorage.getItem("cyclospot_token");
+    let usuarioAtual = null;
+    let bicicletarioSelecionado = null;
+
+    function atualizarRelogio() {
+        const agora = new Date();
+        document.getElementById("data-atual").textContent = agora.toLocaleDateString("pt-BR", {
+            weekday: "long", day: "numeric", month: "long", year: "numeric"
+        });
+        document.getElementById("hora-atual").textContent = agora.toLocaleTimeString("pt-BR", {
+            hour: "2-digit", minute: "2-digit"
+        });
+    }
+
+    function mensagem(texto, erro = false) {
+        const el = document.getElementById("mensagem-reserva");
+        if (!el) return;
+        el.textContent = texto;
+        el.style.color = erro ? "#a32222" : "#176b36";
+    }
+
+    async function api(url, options = {}) {
+        const headers = { ...(options.headers || {}) };
+        if (token) headers.Authorization = "Bearer " + token;
+        if (options.body) headers["Content-Type"] = "application/json";
+        const resposta = await fetch(API + url, { ...options, headers });
+        const dados = await resposta.json();
+        if (!resposta.ok) throw new Error(dados.detail || "Não foi possível concluir a operação.");
+        return dados;
+    }
+
+    function mostrarSelecao(mostrar) {
+        document.getElementById("selecao-bicicletario").hidden = !mostrar;
+        document.getElementById("painel-bicicletario").hidden = mostrar;
+        document.getElementById("fechar-selecao").hidden = !bicicletarioSelecionado;
+    }
+
+    async function carregarOpcoesBicicletario() {
+        const lista = document.getElementById("lista-bicicletarios");
+        try {
+            const locais = await api("/bike-parks");
+            lista.innerHTML = "";
+            if (!locais.length) {
+                lista.textContent = "Nenhum bicicletário está cadastrado para reservas no momento.";
+                return;
+            }
+            locais.forEach(local => {
+                const card = document.createElement("article");
+                card.className = "local-card";
+                card.innerHTML = `
+                    <div class="local-card-icone">⌖</div>
+                    <div class="local-card-info">
+                        <span class="local-card-tag">UNIDADE CYCLOSPOT</span>
+                        <h4></h4><p class="endereco-local"></p>
+                        <div class="detalhes-local"><span></span><span></span></div>
+                    </div>
+                    <button class="botao-escolher-local" type="button">Escolher unidade</button>`;
+                card.querySelector("h4").textContent = local.name;
+                card.querySelector(".endereco-local").textContent = local.address;
+                card.querySelector(".detalhes-local span:first-child").textContent = local.capacity + " vagas";
+                card.querySelector(".detalhes-local span:last-child").textContent = "Funcionamento: " + local.hours;
+                card.querySelector("button").addEventListener("click", () => selecionarBicicletario(local));
+                lista.appendChild(card);
+            });
+        } catch (erro) {
+            lista.textContent = erro.message;
+        }
+    }
+
+    async function selecionarBicicletario(local) {
+        try {
+            await api("/me/bike-park", {
+                method: "PATCH",
+                body: JSON.stringify({ bike_park_id: local.id })
+            });
+            bicicletarioSelecionado = local;
+            atualizarInformacoesLocal(local);
+            mostrarSelecao(false);
+            await carregarVagas();
+            await carregarMinhasReservas();
+        } catch (erro) {
+            const aviso = document.getElementById("mensagem-local");
+            aviso.textContent = erro.message;
+            aviso.style.color = "#a32222";
+        }
+    }
+
+    async function carregarVagas() {
+        if (!token || !bicicletarioSelecionado) return;
+        const data = document.getElementById("data-reserva").value;
+        const hora = document.getElementById("hora-reserva").value;
+        const grade = document.querySelector(".vagas");
+        const seletor = document.getElementById("vaga-reserva");
+        try {
+            const dados = await api("/slots?date=" + encodeURIComponent(data) +
+                "&time=" + encodeURIComponent(hora) + "&bike_park_id=" + bicicletarioSelecionado.id);
+            grade.innerHTML = "";
+            seletor.innerHTML = '<option value="">Selecione uma vaga</option>';
+            dados.slots.forEach(vaga => {
+                const item = document.createElement("div");
+                item.className = "vaga " + (vaga.available ? "vaga-livre" : "ocupada-vaga");
+                item.textContent = String(vaga.number).padStart(2, "0");
+                item.title = vaga.available ? "Vaga disponível" : "Vaga reservada";
+                grade.appendChild(item);
+                if (vaga.available) {
+                    const option = document.createElement("option");
+                    option.value = vaga.number;
+                    option.textContent = "Vaga " + String(vaga.number).padStart(2, "0");
+                    seletor.appendChild(option);
+                }
+            });
+            const ocupadas = dados.slots.filter(v => !v.available).length;
+            const disponiveis = dados.capacity - ocupadas;
+            document.querySelector(".cards .card:nth-child(1) p").textContent = disponiveis;
+            document.querySelector(".cards .card:nth-child(2) p").textContent = ocupadas;
+            document.querySelector(".cards .card:nth-child(1) span").textContent = "de " + dados.capacity + " vagas";
+            document.querySelector(".cards .card:nth-child(2) span").textContent = "de " + dados.capacity + " vagas";
+            document.querySelector(".cards .card:nth-child(3) p").textContent =
+                Math.round(ocupadas / dados.capacity * 100) + "%";
+            document.querySelector(".barra-preenchida").style.width = (ocupadas / dados.capacity * 100) + "%";
+            if (bicicletarioSelecionado) atualizarInformacoesLocal(bicicletarioSelecionado);
+        } catch (erro) {
+            mensagem(erro.message, true);
+        }
+    }
+
+    async function carregarMinhasReservas() {
+        if (!token) return;
+        const reservas = await api("/reservations/mine");
+        const area = document.getElementById("minhas-reservas");
+        area.innerHTML = "";
+        if (!reservas.length) return;
+        const titulo = document.createElement("h3");
+        titulo.textContent = "Minhas reservas";
+        area.appendChild(titulo);
+        reservas.slice(0, 5).forEach(reserva => {
+            const linha = document.createElement("p");
+            linha.textContent = `${reserva.bike_park_name} · Vaga ${String(reserva.slot_number).padStart(2,"0")} · ${reserva.date} às ${reserva.time} · ${reserva.status}`;
+            area.appendChild(linha);
+        });
+    }
+
+    function atualizarInformacoesLocal(local) {
+        document.getElementById("nome-local-selecionado").textContent = local.name + " — " + local.address;
+        document.getElementById("bicicletario-atual").textContent = local.name + " · " + local.address;
+        const infos = document.querySelectorAll(".informacoes-lista .informacao p");
+        if (infos.length >= 3) {
+            infos[0].textContent = local.capacity + " vagas";
+            infos[1].textContent = local.hours;
+            infos[2].textContent = local.address;
+        }
+    }
+
+    async function carregarConta() {
+        if (!token) {
+            document.getElementById("conta-usuario").hidden = true;
+            return;
+        }
+        try {
+            usuarioAtual = await api("/me");
+            document.getElementById("usuario-logado").textContent = usuarioAtual.name;
+            document.getElementById("conta-usuario").hidden = false;
+            document.getElementById("link-login").style.display = "none";
+            document.getElementById("link-login-topo").hidden = true;
+            if (usuarioAtual.role === "admin") document.getElementById("link-admin").style.display = "block";
+
+            const locais = await api("/bike-parks");
+            bicicletarioSelecionado = locais.find(local => local.id === usuarioAtual.selected_bike_park_id) || null;
+            await carregarMinhasReservas();
+            if (bicicletarioSelecionado) {
+                atualizarInformacoesLocal(bicicletarioSelecionado);
+                mostrarSelecao(false);
+                await carregarVagas();
+            } else {
+                mostrarSelecao(true);
+                await carregarOpcoesBicicletario();
+            }
+        } catch (erro) {
+            localStorage.removeItem("cyclospot_token");
+            window.location.href = "login.html";
+        }
+    }
+
+    document.getElementById("btn-reservar").addEventListener("click", async () => {
+        if (!token) {
+            mensagem("Faça login antes de reservar uma vaga.", true);
+            return;
+        }
+        if (!bicicletarioSelecionado) {
+            mensagem("Selecione um bicicletário antes de fazer a reserva.", true);
+            return;
+        }
+        const date = document.getElementById("data-reserva").value;
+        const time = document.getElementById("hora-reserva").value;
+        const slot_number = Number(document.getElementById("vaga-reserva").value);
+        if (!date || !time || !slot_number) {
+            mensagem("Preencha data, horário e vaga.", true);
+            return;
+        }
+        try {
+            await api("/reservations", {
+                method: "POST",
+                body: JSON.stringify({ date, time, slot_number, bike_park_id: bicicletarioSelecionado.id })
+            });
+            mensagem("Reserva registrada com sucesso!");
+            await carregarVagas();
+            await carregarMinhasReservas();
+        } catch (erro) {
+            mensagem(erro.message, true);
+        }
+    });
+
+    document.getElementById("data-reserva").addEventListener("change", carregarVagas);
+    document.getElementById("hora-reserva").addEventListener("change", carregarVagas);
+    document.getElementById("trocar-bicicletario").addEventListener("click", async () => {
+        mostrarSelecao(true);
+        await carregarOpcoesBicicletario();
+    });
+    document.getElementById("fechar-selecao").addEventListener("click", () => mostrarSelecao(false));
+    document.getElementById("btn-sair").addEventListener("click", () => {
+        localStorage.removeItem("cyclospot_token");
+        window.location.href = "login.html";
+    });
+
+    // Sincronização em tempo real com os 3 sensores ultrassônicos do Arduino via cabo USB
+    let ultimoEstadoSensores = "";
+    async function sincronizarSensoresArduino() {
+        try {
+            const resp = await fetch("/api/sensors");
+            if (!resp.ok) return;
+            const sens = await resp.json();
+
+            // Atualiza a lista de "Últimas atividades" com as entradas e saídas reais do sensor
+            const boxAtividades = document.querySelector(".atividades");
+            if (boxAtividades && Array.isArray(sens.activities)) {
+                boxAtividades.innerHTML = "<h2>Últimas atividades</h2>" +
+                    sens.activities.slice(0, 5).map(a =>
+                        `<p class="${a.type === 'saida' ? 'saida' : 'entrada'}"><span>${a.label}</span> <span>${a.time}</span></p>`
+                    ).join("");
+            }
+
+            const assinatura = JSON.stringify(sens.occupied_slots || []);
+            if (token && bicicletarioSelecionado) {
+                if (assinatura !== ultimoEstadoSensores) {
+                    ultimoEstadoSensores = assinatura;
+                    await carregarVagas();
+                }
+            } else {
+                // Atualiza visualmente as vagas 01, 02 e 03 mesmo antes de fazer login
+                const itensVaga = document.querySelectorAll(".vagas .vaga");
+                if (itensVaga.length >= 3) {
+                    [1, 2, 3].forEach(num => {
+                        const el = itensVaga[num - 1];
+                        const ocupadaSensor = (sens.occupied_slots || []).includes(num);
+                        el.className = "vaga " + (ocupadaSensor ? "ocupada-vaga" : "vaga-livre");
+                        el.title = ocupadaSensor ? "Ocupada no sensor físico" : "Livre no sensor físico";
+                    });
+                    const totalCap = itensVaga.length;
+                    const totalOcup = document.querySelectorAll(".vagas .ocupada-vaga").length;
+                    const totalDisp = totalCap - totalOcup;
+                    document.querySelector(".cards .card:nth-child(1) p").textContent = totalDisp;
+                    document.querySelector(".cards .card:nth-child(2) p").textContent = totalOcup;
+                    document.querySelector(".cards .card:nth-child(3) p").textContent = Math.round(totalOcup / totalCap * 100) + "%";
+                    document.querySelector(".barra-preenchida").style.width = (totalOcup / totalCap * 100) + "%";
+                }
+            }
+        } catch (_) {}
+    }
+
+    const hoje = new Date();
+    const hojeLocal = new Date(hoje.getTime() - hoje.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    document.getElementById("data-reserva").min = hojeLocal;
+    document.getElementById("data-reserva").value = hojeLocal;
+    document.getElementById("hora-reserva").value = "08:00";
+    atualizarRelogio();
+    setInterval(atualizarRelogio, 1000);
+    setInterval(sincronizarSensoresArduino, 1000);
+    carregarConta();
+    sincronizarSensoresArduino();
+</script>
+<script src="topbar.js?v=202611143"></script>
+</body>
+</html>
