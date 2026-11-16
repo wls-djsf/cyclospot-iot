@@ -544,7 +544,7 @@
   }
 
   // ==========================================================================
-  // 4. BARRA DE TELEMETRIA DOS SENSORES ULTRASSÔNICOS (SOMENTE LEITURA DO SENSOR)
+  // 4. BOTÕES MINIMALISTAS: APENAS "CONECTAR CABO USB" E "QR CODE"
   // ==========================================================================
   function injetarBarraIoT() {
     const painel = document.querySelector(".conteudo");
@@ -553,86 +553,39 @@
     const estilo = document.createElement("style");
     estilo.textContent = `
       .barra-iot-cloud {
-        background: linear-gradient(135deg, #0b3520 0%, #145334 100%);
-        color: #fff;
-        padding: 16px 20px;
-        border-radius: 14px;
-        margin-bottom: 20px;
-        box-shadow: 0 8px 22px rgba(9, 44, 27, 0.16);
         display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
+        justify-content: flex-end;
         align-items: center;
-        gap: 14px;
-      }
-      .iot-status-left {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-      .iot-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        background: rgba(76, 217, 100, 0.2);
-        border: 1px solid #4cd964;
-        color: #4cd964;
-        font-size: 12px;
-        font-weight: 700;
-        padding: 4px 11px;
-        border-radius: 99px;
-        width: fit-content;
-      }
-      .iot-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #4cd964;
-        box-shadow: 0 0 8px #4cd964;
-      }
-      .iot-sensores-chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        align-items: center;
-      }
-      .sensor-chip-readonly {
-        padding: 8px 13px;
-        border-radius: 10px;
-        font-size: 13px;
-        font-weight: 700;
-        user-select: none;
-        cursor: default;
-      }
-      .sensor-chip-readonly.ocupado {
-        background: #dc2626;
-        border: 1px solid #fca5a5;
-        color: #fff;
-      }
-      .sensor-chip-readonly.livre {
-        background: #15803d;
-        border: 1px solid #86efac;
-        color: #fff;
-      }
-      .btn-acao-iot {
-        background: #4cd964;
-        color: #072515;
-        border: none;
-        padding: 9px 13px;
-        border-radius: 10px;
-        font-weight: 800;
-        font-size: 12.5px;
-        cursor: pointer;
+        gap: 10px;
+        margin: 10px 0 14px;
       }
       .btn-usb-iot {
         background: #ffffff;
-        color: #0b3520;
-        border: none;
-        padding: 9px 13px;
-        border-radius: 10px;
-        font-weight: 800;
-        font-size: 12.5px;
+        color: #173d2b;
+        border: 1px solid #cfe0d5;
+        padding: 9px 15px;
+        border-radius: 9px;
+        font-weight: 700;
+        font-size: 13.5px;
         cursor: pointer;
+        transition: background 0.15s;
+      }
+      .btn-usb-iot:hover {
+        background: #eaf5ed;
+      }
+      .btn-acao-iot {
+        background: #176b43;
+        color: #ffffff;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 9px;
+        font-weight: 700;
+        font-size: 13.5px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .btn-acao-iot:hover {
+        background: #0d5232;
       }
       .modal-qr-fundo {
         position: fixed;
@@ -669,26 +622,12 @@
     barra.id = "barra-iot-cloud";
     barra.className = "barra-iot-cloud";
     barra.innerHTML = `
-      <div class="iot-status-left">
-        <div class="iot-pill">
-          <span class="iot-dot"></span>
-          <span id="iot-status-texto">Aguardando Leitura dos Sensores Ultrassônicos...</span>
-        </div>
-        <small style="color: #cfe3d6; font-size: 12.5px;">
-          Leitura automática via Sensor Ultrassônico HC-SR04 (Distância &le; 3 cm = Vaga Ocupada)
-        </small>
-      </div>
-      <div class="iot-sensores-chips">
-        <span class="sensor-chip-readonly livre" id="chip-vaga-1">🟢 Sensor Vaga 01: Livre</span>
-        <span class="sensor-chip-readonly livre" id="chip-vaga-2">🟢 Sensor Vaga 02: Livre</span>
-        <span class="sensor-chip-readonly livre" id="chip-vaga-3">🟢 Sensor Vaga 03: Livre</span>
-        <button type="button" class="btn-usb-iot" onclick="conectarCaboUSBArduinoDireto()" title="Use no PC onde o cabo USB do Arduino está conectado">
-          🔌 Conectar Cabo USB
-        </button>
-        <button type="button" class="btn-acao-iot" onclick="document.getElementById('modal-qr-banca').style.display='flex'">
-          📱 QR Code
-        </button>
-      </div>
+      <button type="button" class="btn-usb-iot" id="btn-conectar-usb" onclick="conectarCaboUSBArduinoDireto()">
+        🔌 Conectar Cabo USB
+      </button>
+      <button type="button" class="btn-acao-iot" onclick="document.getElementById('modal-qr-banca').style.display='flex'">
+        📱 QR Code
+      </button>
     `;
 
     const topo = painel.querySelector(".topo");
@@ -716,32 +655,15 @@
       </div>
     `;
     document.body.appendChild(modal);
-
-    atualizarBarraIoTUI();
   }
 
   function atualizarBarraIoTUI() {
-    const txt = document.getElementById("iot-status-texto");
-    if (txt) {
-      if (window.CycloSpotIoT.arduinoConnected) {
-        txt.textContent = `Arduino Conectado (${window.CycloSpotIoT.arduinoPort}) • Transmitindo ao Vivo`;
-      } else if (window.CycloSpotIoT.mqttConnected) {
-        txt.textContent = "Nuvem IoT Conectada • Aguardando Leitura do Sensor do Arduino";
-      } else {
-        txt.textContent = "Conectando à Nuvem IoT...";
-      }
+    const btnUsb = document.getElementById("btn-conectar-usb");
+    if (btnUsb && window.CycloSpotIoT.arduinoConnected) {
+      btnUsb.textContent = "✅ Cabo USB Conectado";
+      btnUsb.style.borderColor = "#23864d";
+      btnUsb.style.color = "#145334";
     }
-
-    [1, 2, 3].forEach(num => {
-      const chip = document.getElementById(`chip-vaga-${num}`);
-      if (!chip) return;
-      const ocupada = window.CycloSpotIoT.occupiedSlots.includes(num);
-      const dist = window.CycloSpotIoT.distances[num];
-      chip.className = "sensor-chip-readonly " + (ocupada ? "ocupado" : "livre");
-      chip.textContent = ocupada
-        ? `🔴 Sensor Vaga 0${num}: Ocupada (${dist < 900 ? dist + " cm" : "<=3 cm"})`
-        : `🟢 Sensor Vaga 0${num}: Livre`;
-    });
   }
 
   window.addEventListener("DOMContentLoaded", () => {
