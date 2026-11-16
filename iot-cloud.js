@@ -622,13 +622,27 @@
     barra.id = "barra-iot-cloud";
     barra.className = "barra-iot-cloud";
     barra.innerHTML = `
-      <button type="button" class="btn-usb-iot" id="btn-conectar-usb" onclick="conectarCaboUSBArduinoDireto()">
+      <button type="button" class="btn-usb-iot" id="btn-conectar-usb" style="display:none;" onclick="conectarCaboUSBArduinoDireto()">
         🔌 Conectar Cabo USB
       </button>
       <button type="button" class="btn-acao-iot" onclick="document.getElementById('modal-qr-banca').style.display='flex'">
         📱 QR Code
       </button>
     `;
+
+    // Exibe o botão "Conectar Cabo USB" exclusivamente quando logado como Administrador
+    const token = localStorage.getItem("cyclospot_token");
+    if (token) {
+      window.fetch("/api/me", { headers: { Authorization: "Bearer " + token } })
+        .then(r => (r.ok ? r.json() : null))
+        .then(me => {
+          const btnUsb = document.getElementById("btn-conectar-usb");
+          if (btnUsb && me && me.role === "admin") {
+            btnUsb.style.display = "inline-block";
+          }
+        })
+        .catch(() => {});
+    }
 
     const topo = painel.querySelector(".topo");
     if (topo && topo.nextSibling) {
